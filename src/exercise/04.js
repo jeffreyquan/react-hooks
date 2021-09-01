@@ -38,34 +38,43 @@ function Game() {
   const [history, setHistory] = useLocalStorageState('history', () => [
     Array(9).fill(null),
   ])
+  const [currentStep, setCurrentStep] = useLocalStorageState('step', 0)
 
-  const [step, setStep] = useLocalStorageState('step', 0)
+  const currentSquares = history[currentStep]
 
-  const nextValue = calculateNextValue(history[history.length - 1])
-  const winner = calculateWinner(history[history.length - 1])
-  const status = calculateStatus(winner, history[history.length - 1], nextValue)
-  const currentSquares = history[step]
+  const nextValue = calculateNextValue(currentSquares)
+  const winner = calculateWinner(currentSquares)
+  const status = calculateStatus(winner, currentSquares, nextValue)
 
   function selectSquare(square) {
-    if (winner || history[step][square]) {
+    if (winner || currentSquares[square]) {
       return
     }
 
-    const historyCopy = history.slice(0, step + 1)
-    const squaresCopy = [...history[step]]
+    const newHistory = history.slice(0, currentStep + 1)
+    const squaresCopy = [...currentSquares]
     squaresCopy[square] = nextValue
-    historyCopy.push(squaresCopy)
-    console.log(historyCopy)
-    setHistory(historyCopy)
-    setStep(step + 1)
+
+    setHistory([...newHistory, squaresCopy])
+    setCurrentStep(currentStep + 1)
   }
 
   function restart() {
     setHistory([Array(9).fill(null)])
-    setStep(0)
+    setCurrentStep(0)
   }
 
-  const moves = generateMoves({step, setStep, history})
+  const moves = history.map((_, step) => {
+    const description = step === 0 ? 'Go to game start' : `Go to move #${step}`
+    const isCurrentStep = step === currentStep
+    return (
+      <li>
+        <button onClick={() => setCurrentStep(step)} disabled={isCurrentStep}>
+          {description} {isCurrentStep ? '(current)' : null}
+        </button>
+      </li>
+    )
+  })
 
   return (
     <div className="game">
@@ -81,17 +90,6 @@ function Game() {
       </div>
     </div>
   )
-}
-
-function generateMoves({step, setStep, history}) {
-  return history.map((squares, index) => (
-    <li>
-      <button onClick={() => setStep(index)} disabled={step === index}>
-        Go to {index === 0 ? 'game start' : `move #${index}`}{' '}
-        {step === index && '(current)'}
-      </button>
-    </li>
-  ))
 }
 
 // eslint-disable-next-line no-unused-vars
